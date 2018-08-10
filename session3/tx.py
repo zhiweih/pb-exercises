@@ -42,8 +42,14 @@ class Tx:
         # each output needs parsing
         # locktime is 4 bytes, little-endian
         # return an instance of the class (cls(...))
-        raise NotImplementedError
-
+        version = little_endian_to_int(s.read(4))
+        num_inputs = read_varint(s)
+        tx_ins = [TxIn.parse(s) for _ in range(num_inputs)]
+        num_outputs = read_varint(s)
+        tx_outs = [TxOut.parse(s) for _ in range(num_outputs)]
+        locktime = little_endian_to_int(s.read(4))
+        return cls(version, tx_ins, tx_outs, locktime)
+        
 
 class TxIn:
     def __init__(self, prev_tx, prev_index, script_sig, sequence):
@@ -65,12 +71,17 @@ class TxIn:
         '''
         # s.read(n) will return n bytes
         # prev_tx is 32 bytes, little endian
+        prev_tx = s.read(32)[::-1]
         # prev_index is 4 bytes, little endian, interpret as int
+        prev_index = little_endian_to_int(s.read(4))
         # script_sig is a variable field (length followed by the data)
         # get the length by using read_varint(s)
+        length = read_varint(s)
+        script_sig = s.read(length)
         # sequence is 4 bytes, little-endian, interpret as int
+        sequence = little_endian_to_int(s.read(4))
         # return an instance of the class (cls(...))
-        raise NotImplementedError
+        return cls(prev_tx, prev_index, script_sig, sequence)
 
 
 class TxOut:
@@ -89,10 +100,13 @@ class TxOut:
         '''
         # s.read(n) will return n bytes
         # amount is 8 bytes, little endian, interpret as int
+        amount = little_endian_to_int(s.read(8))
         # script_pubkey is a variable field (length followed by the data)
         # get the length by using read_varint(s)
+        script_pubkey_length = read_varint(s)
+        script_pubkey = s.read(script_pubkey_length)
         # return an instance of the class (cls(...))
-        raise NotImplementedError
+        return cls(amount, script_pubkey)
 
 
 class TxTest(TestCase):

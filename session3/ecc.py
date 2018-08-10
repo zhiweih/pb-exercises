@@ -479,7 +479,9 @@ class S256Point(Point):
         # u = z / s
         # v = r / s
         # u*G + v*P should have as the x coordinate, r
-        raise NotImplementedError
+        u = z * pow(sig.s, N-2, N) % N
+        v = sig.r * pow(sig.s, N-2, N) % N
+        return (u * G + v * self).x.num == sig.r
 
     @classmethod
     def parse(self, sec_bin):
@@ -674,15 +676,22 @@ class PrivateKey:
         # s = (z+r*secret) / k
         # return an instance of Signature:
         # Signature(r, s)
-        raise NotImplementedError
+        k = randint(0, 2**256)
+        r = (k * G).x.num
+        s = (z + r * self.secret) * pow(k, N-2, N) % N
+        return Signature(r, s)
 
     def wif(self, compressed=True, testnet=False):
         # convert the secret from integer to a 32-bytes in big endian using num.to_bytes(32, 'big')
         # prepend b'\xef' on testnet, b'\x80' on mainnet
         # append b'\x01' if compressed
         # encode_base58_checksum the whole thing
-        raise NotImplementedError
-
+        prefix = b'\xef' if testnet else b'\x80'
+        body = self.secret.to_bytes(32, 'big')
+        if compressed:
+            body += b'\x01'
+        return encode_base58_checksum(prefix + body)
+        
 
 class PrivateKeyTest(TestCase):
 
